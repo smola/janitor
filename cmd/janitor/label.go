@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"gopkg.in/src-d/go-cli.v0"
+	"gopkg.in/src-d/go-log.v1"
 
 	"github.com/smola/janitor/github"
 )
@@ -33,6 +34,11 @@ func (c labelCommand) ExecuteContext(ctx context.Context, args []string) error {
 	}
 
 	for _, repo := range repos {
+		if repo.Archived {
+			log.Debugf("skipping archived repository: %s/%s", repo.Owner, repo.Name)
+			continue
+		}
+
 		err := client.AddLabel(ctx, repo, label)
 		if err != nil {
 			return err

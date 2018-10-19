@@ -16,8 +16,10 @@ type RepositoriesSpec struct {
 }
 
 type Repository struct {
-	Owner string
-	Name  string
+	Owner    string
+	Name     string
+	Archived bool
+	Private  bool
 }
 
 func (c *Client) List(ctx context.Context, repoMasks []string) ([]*Repository, error) {
@@ -41,15 +43,15 @@ func (c *Client) List(ctx context.Context, repoMasks []string) ([]*Repository, e
 			result = append(result, repos...)
 		} else {
 			for _, name := range rm.Names {
-				ok, err := c.repoExists(ctx, rm.Owner, name)
+				repo, err := c.getRepo(ctx, rm.Owner, name)
 				if err != nil {
 					return result, err
 				}
 
-				if !ok {
+				if repo == nil {
 					log.Warningf("given repository does not exist: %s/%s", rm.Owner, name)
 				} else {
-					result = append(result, &Repository{Owner: rm.Owner, Name: name})
+					result = append(result, repo)
 				}
 			}
 		}
@@ -70,7 +72,12 @@ func (c *Client) listOrganization(ctx context.Context, org string) ([]*Repositor
 		}
 
 		for _, repo := range repos {
-			result = append(result, &Repository{Owner: org, Name: *repo.Name})
+			result = append(result, &Repository{
+				Owner:    org,
+				Name:     *repo.Name,
+				Archived: *repo.Archived,
+				Private:  *repo.Private,
+			})
 		}
 
 		if resp.NextPage > 0 {
@@ -83,18 +90,24 @@ func (c *Client) listOrganization(ctx context.Context, org string) ([]*Repositor
 	return result, nil
 }
 
-func (c *Client) repoExists(ctx context.Context, org, repo string) (bool, error) {
-	_, resp, err := c.Client.Repositories.Get(ctx, org, repo)
+func (c *Client) getRepo(ctx context.Context, org, repo string) (*Repository, error) {
+	rrepo, resp, err := c.Client.Repositories.Get(ctx, org, repo)
 	if err == nil {
-		return true, nil
+		result := &Repository{
+			Owner:    org,
+			Name:     repo,
+			Archived: *rrepo.Archived,
+			Private:  *rrepo.Private,
+		}
+		return result, nil
 	}
 
 	if resp.StatusCode == 404 {
-		return false, nil
+		return nil, nil
 	}
 
 	log.Debugf("got unexpected error, response was: %#v", resp)
-	return false, err
+	return nil, err
 }
 
 func parseRepoMasks(repoMasks []string) ([]*RepositoriesSpec, error) {

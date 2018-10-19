@@ -40,16 +40,19 @@ func (c *Client) AddLabel(ctx context.Context, repo *Repository, label *Label) e
 
 	for _, rlabel := range labels {
 		if *rlabel.Name == label.Name {
+			log.Infof("editing %s on %s/%s", label.Name, repo.Owner, repo.Name)
 			return c.editLabel(ctx, repo, label.Name, label)
 		}
 
 		for _, from := range label.From {
 			if *rlabel.Name == from {
+				log.Infof("editing %s on %s/%s", from, repo.Owner, repo.Name)
 				return c.editLabel(ctx, repo, from, label)
 			}
 		}
 	}
 
+	log.Infof("creating %s on %s/%s", label.Name, repo.Owner, repo.Name)
 	return c.createLabel(ctx, repo, label)
 }
 
