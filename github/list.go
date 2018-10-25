@@ -20,6 +20,8 @@ type Repository struct {
 	Name     string
 	Archived bool
 	Private  bool
+	// License as SPDXID.
+	License string
 }
 
 func (c *Client) List(ctx context.Context, repoMasks []string) ([]*Repository, error) {
@@ -72,12 +74,9 @@ func (c *Client) listOrganization(ctx context.Context, org string) ([]*Repositor
 		}
 
 		for _, repo := range repos {
-			result = append(result, &Repository{
-				Owner:    org,
-				Name:     *repo.Name,
-				Archived: *repo.Archived,
-				Private:  *repo.Private,
-			})
+			lrepo := repositoryRemoteToLocal(repo)
+			lrepo.Owner = org
+			result = append(result, lrepo)
 		}
 
 		if resp.NextPage > 0 {
@@ -93,13 +92,7 @@ func (c *Client) listOrganization(ctx context.Context, org string) ([]*Repositor
 func (c *Client) getRepo(ctx context.Context, org, repo string) (*Repository, error) {
 	rrepo, resp, err := c.Client.Repositories.Get(ctx, org, repo)
 	if err == nil {
-		result := &Repository{
-			Owner:    org,
-			Name:     repo,
-			Archived: *rrepo.Archived,
-			Private:  *rrepo.Private,
-		}
-		return result, nil
+		return repositoryRemoteToLocal(rrepo), nil
 	}
 
 	if resp.StatusCode == 404 {
@@ -148,4 +141,25 @@ func parseRepoMask(repoMask string) (string, string, error) {
 	}
 
 	return fields[0], fields[1], nil
+}
+
+func repositoryRemoteToLocal(rrepo *github.Repository) *Repository {
+	if rrepo == nil {
+		return nil
+	}
+
+	lrepo := &Repository{
+		Name:     rrepo.GetName(),
+		Archived: rrepo.GetArchived(),
+		Private:  rrepo.GetPrivate(),
+		License:  rrepo.GetLicense().GetSPDXID(),
+	}
+
+	if rrepo.Owner != nil {
+		lrepo.Owner = rrepo.GetOwner().GetName()
+	} else {
+		lrepo.Owner = rrepo.GetOrganization().GetName()
+	}
+
+	return lrepo
 }
