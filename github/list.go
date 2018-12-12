@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/google/go-github/github"
 	"gopkg.in/src-d/go-log.v1"
@@ -16,10 +17,13 @@ type RepositoriesSpec struct {
 }
 
 type Repository struct {
-	Owner    string
-	Name     string
-	Archived bool
-	Private  bool
+	Owner     string
+	Name      string
+	Archived  bool
+	Private   bool
+	CreatedAt time.Time
+	PushedAt  time.Time
+	UpdatedAt time.Time
 	// License as SPDXID.
 	License     string
 	Maintainers []*User
@@ -150,10 +154,13 @@ func repositoryRemoteToLocal(rrepo *github.Repository) *Repository {
 	}
 
 	lrepo := &Repository{
-		Name:     rrepo.GetName(),
-		Archived: rrepo.GetArchived(),
-		Private:  rrepo.GetPrivate(),
-		License:  rrepo.GetLicense().GetSPDXID(),
+		Name:      rrepo.GetName(),
+		Archived:  rrepo.GetArchived(),
+		Private:   rrepo.GetPrivate(),
+		License:   rrepo.GetLicense().GetSPDXID(),
+		CreatedAt: rrepo.GetCreatedAt().Time,
+		PushedAt:  rrepo.GetPushedAt().Time,
+		UpdatedAt: rrepo.GetUpdatedAt().Time,
 	}
 
 	if rrepo.Owner != nil {
