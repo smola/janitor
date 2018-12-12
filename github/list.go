@@ -21,7 +21,8 @@ type Repository struct {
 	Archived bool
 	Private  bool
 	// License as SPDXID.
-	License string
+	License     string
+	Maintainers []*User
 }
 
 func (c *Client) List(ctx context.Context, repoMasks []string) ([]*Repository, error) {

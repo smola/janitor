@@ -7,6 +7,9 @@ import (
 	"text/template"
 
 	"gopkg.in/src-d/go-cli.v0"
+	log "gopkg.in/src-d/go-log.v1"
+
+	"github.com/smola/janitor/github"
 )
 
 type listCommand struct {
@@ -29,6 +32,10 @@ func (c listCommand) ExecuteContext(ctx context.Context, args []string) error {
 	}
 
 	for _, repo := range repos {
+		repo.Maintainers, err = github.GetMaintainers(repo.Owner, repo.Name)
+		if err != nil {
+			log.Errorf(err, "retrieving maintainers for %s/%s", repo.Owner, repo.Name)
+		}
 		err := tpl.Execute(os.Stdout, repo)
 		if err != nil {
 			return err
