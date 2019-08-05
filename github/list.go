@@ -164,7 +164,7 @@ func repositoryRemoteToLocal(rrepo *github.Repository) *Repository {
 	}
 
 	if rrepo.Owner != nil {
-		lrepo.Owner = rrepo.GetOwner().GetName()
+		lrepo.Owner = rrepo.GetOwner().GetLogin()
 	} else {
 		lrepo.Owner = rrepo.GetOrganization().GetName()
 	}
